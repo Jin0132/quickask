@@ -10,9 +10,6 @@ import {
   Keyboard,
   Check,
   Copy,
-  Navigation,
-  Loader2,
-  AlertCircle,
 } from 'lucide-react';
 
 interface SpeechRecognitionEvent extends Event {
@@ -48,12 +45,6 @@ type Category = {
   accent: string;
 };
 
-type LocationState =
-  | { status: 'loading' }
-  | { status: 'granted'; lat: number; lng: number }
-  | { status: 'denied' }
-  | { status: 'unavailable' };
-
 const categories: Category[] = [
   {
     id: 'food',
@@ -87,28 +78,8 @@ export default function QuickAsk() {
   const [question, setQuestion] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [location, setLocation] = useState<LocationState>({ status: 'loading' });
 
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
-
-  useEffect(() => {
-    if (!navigator.geolocation) {
-      setLocation({ status: 'unavailable' });
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLocation({
-          status: 'granted',
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-        });
-      },
-      () => setLocation({ status: 'denied' }),
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
-  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -157,16 +128,10 @@ export default function QuickAsk() {
       '🤖 QuickAsk — Local Support',
       '',
       `🏷 Category: ${category?.label ?? '—'}`,
+      '',
+      `💬 Question:`,
+      `"${question.trim()}"`,
     ];
-
-    if (location.status === 'granted') {
-      lines.push(`📍 Location: ${location.lat.toFixed(5)}, ${location.lng.toFixed(5)}`);
-      lines.push(`   https://maps.google.com/?q=${location.lat},${location.lng}`);
-    } else {
-      lines.push('📍 Location: Not available');
-    }
-
-    lines.push('', `💬 Question:`, `"${question.trim()}"`);
 
     return lines.join('\n');
   };
@@ -188,39 +153,6 @@ export default function QuickAsk() {
     }
   };
 
-  const locationBadge = () => {
-    switch (location.status) {
-      case 'loading':
-        return (
-          <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            Getting your location…
-          </span>
-        );
-      case 'granted':
-        return (
-          <span className="inline-flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
-            <Navigation className="w-3.5 h-3.5" />
-            Location ready
-          </span>
-        );
-      case 'denied':
-        return (
-          <span className="inline-flex items-center gap-1.5 text-xs text-amber-600">
-            <AlertCircle className="w-3.5 h-3.5" />
-            Location denied — you can still ask
-          </span>
-        );
-      default:
-        return (
-          <span className="inline-flex items-center gap-1.5 text-xs text-slate-400">
-            <AlertCircle className="w-3.5 h-3.5" />
-            Location unavailable
-          </span>
-        );
-    }
-  };
-
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white">
       <div className="mx-auto flex min-h-screen w-full max-w-md flex-col px-5 py-6">
@@ -235,7 +167,6 @@ export default function QuickAsk() {
           <p className="mt-2 text-sm text-slate-400">
             Ask anything — we&apos;ll help you out
           </p>
-          <div className="mt-3">{locationBadge()}</div>
         </header>
 
         {/* Category Grid */}
