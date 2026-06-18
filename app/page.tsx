@@ -42,15 +42,47 @@ declare global {
 }
 
 const INSTAGRAM_USERNAME = 'icl_tokyo';
-/** Meta official DM deep link — no @ in username */
+const INSTAGRAM_USER_ID = '23437671708';
+/** Meta official DM link (desktop / fallback) */
 const INSTAGRAM_DM_URL = `https://ig.me/m/${INSTAGRAM_USERNAME}`;
 
-/** Open Instagram DM in a new tab/app; fallback if popup is blocked (mobile) */
+function isMobile(): boolean {
+  return typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+}
+
+function isAndroid(): boolean {
+  return typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
+}
+
+function isInstagramInAppBrowser(): boolean {
+  return typeof navigator !== 'undefined' && /Instagram/i.test(navigator.userAgent);
+}
+
+/**
+ * Opens DM in the native Instagram app (logged-in session).
+ * https://ig.me from in-app browser or window.open often shows web login instead.
+ */
+function getInstagramAppDmUrl(): string {
+  if (isAndroid()) {
+    return `intent://ig.me/m/${INSTAGRAM_USERNAME}#Intent;package=com.instagram.android;scheme=https;end`;
+  }
+  return `instagram://direct?igid=${INSTAGRAM_USER_ID}`;
+}
+
 function openInstagramDm(): void {
+  if (isMobile() || isInstagramInAppBrowser()) {
+    window.location.href = getInstagramAppDmUrl();
+    return;
+  }
+
   const opened = window.open(INSTAGRAM_DM_URL, '_blank', 'noopener,noreferrer');
   if (!opened) {
     window.location.href = INSTAGRAM_DM_URL;
   }
+}
+
+function openInstagramDmWeb(): void {
+  window.location.href = INSTAGRAM_DM_URL;
 }
 
 type CategoryId = 'food' | 'photo' | 'lost' | 'smoking';
@@ -97,8 +129,15 @@ export default function QuickAsk() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [copiedMessage, setCopiedMessage] = useState('');
   const [copySucceeded, setCopySucceeded] = useState(false);
+  const [instagramDmHref, setInstagramDmHref] = useState(INSTAGRAM_DM_URL);
 
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
+
+  useEffect(() => {
+    if (isMobile() || isInstagramInAppBrowser()) {
+      setInstagramDmHref(getInstagramAppDmUrl());
+    }
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -422,7 +461,7 @@ export default function QuickAsk() {
                     1
                   </span>
                   <span>
-                    Tap &ldquo;Message @{INSTAGRAM_USERNAME}&rdquo; — opens Instagram DM
+                    Tap &ldquo;Message @{INSTAGRAM_USERNAME}&rdquo; — opens the Instagram app
                   </span>
                 </li>
                 <li className="flex gap-2.5">
@@ -435,13 +474,16 @@ export default function QuickAsk() {
                   </span>
                 </li>
               </ol>
+              {isInstagramInAppBrowser() && (
+                <p className="mt-3 rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+                  Seeing a login screen? Tap <strong>⋯</strong> → <strong>Open in Safari</strong>, then try again.
+                </p>
+              )}
             </div>
 
             <div className="space-y-2.5">
               <a
-                href={INSTAGRAM_DM_URL}
-                target="_blank"
-                rel="noopener noreferrer"
+                href={instagramDmHref}
                 onClick={(e) => {
                   e.preventDefault();
                   openInstagramDm();
@@ -451,9 +493,13 @@ export default function QuickAsk() {
                 <ExternalLink className="h-5 w-5" />
                 Message @{INSTAGRAM_USERNAME}
               </a>
-              <p className="text-center text-[10px] text-slate-500">
-                Opens {INSTAGRAM_DM_URL.replace('https://', '')} in Instagram
-              </p>
+              <button
+                type="button"
+                onClick={openInstagramDmWeb}
+                className="w-full py-2 text-center text-xs text-slate-500 underline hover:text-slate-300"
+              >
+                Login screen? Try {INSTAGRAM_DM_URL.replace('https://', '')}
+              </button>
             </div>
           </div>
         </div>
