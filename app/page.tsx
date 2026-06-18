@@ -125,15 +125,8 @@ export default function QuickAsk() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [copiedMessage, setCopiedMessage] = useState('');
   const [copySucceeded, setCopySucceeded] = useState(false);
-  const [instagramHref, setInstagramHref] = useState(INSTAGRAM_PROFILE_WEB);
 
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
-
-  useEffect(() => {
-    if (isMobile() || isInstagramInAppBrowser()) {
-      setInstagramHref(getInstagramProfileAppUrl());
-    }
-  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -362,7 +355,16 @@ export default function QuickAsk() {
         <footer className="mt-auto space-y-3 pt-2">
           <p className="text-center text-[11px] text-slate-500">
             Follow us for tips —{' '}
-            <span className="font-semibold text-pink-400">@{INSTAGRAM_USERNAME}</span>
+            <a
+              href={INSTAGRAM_PROFILE_WEB}
+              onClick={(e) => {
+                e.preventDefault();
+                openInstagramProfile();
+              }}
+              className="font-semibold text-pink-400 underline hover:text-pink-300"
+            >
+              @{INSTAGRAM_USERNAME}
+            </a>
           </p>
 
           <button
@@ -457,20 +459,12 @@ export default function QuickAsk() {
                     1
                   </span>
                   <span>
-                    Tap &ldquo;Open @{INSTAGRAM_USERNAME}&rdquo; below
+                    Tap &ldquo;Open Instagram&rdquo; below
                   </span>
                 </li>
                 <li className="flex gap-2.5">
                   <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-pink-500/20 text-xs font-bold text-pink-400">
                     2
-                  </span>
-                  <span>
-                    Tap <strong className="text-white">Message</strong> on the profile
-                  </span>
-                </li>
-                <li className="flex gap-2.5">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-pink-500/20 text-xs font-bold text-pink-400">
-                    3
                   </span>
                   <span>
                     <strong className="text-white">Long-press</strong> the chat box →{' '}
@@ -487,23 +481,16 @@ export default function QuickAsk() {
 
             <div className="space-y-2.5">
               <a
-                href={instagramHref}
+                href={INSTAGRAM_DM_URL}
                 onClick={(e) => {
                   e.preventDefault();
-                  openInstagramProfile();
+                  openInstagramDm();
                 }}
                 className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 py-4 text-base font-bold text-white shadow-lg active:scale-[0.98]"
               >
                 <ExternalLink className="h-5 w-5" />
-                Open @{INSTAGRAM_USERNAME}
+                Open Instagram
               </a>
-              <button
-                type="button"
-                onClick={openInstagramDm}
-                className="w-full py-2 text-center text-xs text-slate-500 underline hover:text-slate-300"
-              >
-                Try DM link directly ({INSTAGRAM_DM_URL.replace('https://', '')})
-              </button>
             </div>
           </div>
         </div>
