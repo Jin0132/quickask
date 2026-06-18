@@ -42,8 +42,16 @@ declare global {
 }
 
 const INSTAGRAM_USERNAME = 'icl_tokyo';
-const INSTAGRAM_DM_WEB = `https://ig.me/m/${INSTAGRAM_USERNAME}`;
-const INSTAGRAM_DM_APP = `instagram://direct?username=${INSTAGRAM_USERNAME}`;
+/** Meta official DM deep link — no @ in username */
+const INSTAGRAM_DM_URL = `https://ig.me/m/${INSTAGRAM_USERNAME}`;
+
+/** Open Instagram DM in a new tab/app; fallback if popup is blocked (mobile) */
+function openInstagramDm(): void {
+  const opened = window.open(INSTAGRAM_DM_URL, '_blank', 'noopener,noreferrer');
+  if (!opened) {
+    window.location.href = INSTAGRAM_DM_URL;
+  }
+}
 
 type CategoryId = 'food' | 'photo' | 'lost' | 'smoking';
 
@@ -186,16 +194,6 @@ export default function QuickAsk() {
     setCopiedMessage(message);
     setCopySucceeded(copied);
     setShowSuccessModal(true);
-  };
-
-  const openInstagramApp = () => {
-    // Opens DM compose screen for @icl_tokyo in the native Instagram app
-    window.location.href = INSTAGRAM_DM_APP;
-  };
-
-  const openInstagramWeb = () => {
-    // Universal link — opens DM to @icl_tokyo (app if installed, else browser)
-    window.location.href = INSTAGRAM_DM_WEB;
   };
 
   const handleCopyAgain = async () => {
@@ -424,7 +422,7 @@ export default function QuickAsk() {
                     1
                   </span>
                   <span>
-                    Tap &ldquo;Message @{INSTAGRAM_USERNAME}&rdquo; below
+                    Tap &ldquo;Message @{INSTAGRAM_USERNAME}&rdquo; — opens Instagram DM
                   </span>
                 </li>
                 <li className="flex gap-2.5">
@@ -441,26 +439,21 @@ export default function QuickAsk() {
 
             <div className="space-y-2.5">
               <a
-                href={INSTAGRAM_DM_APP}
+                href={INSTAGRAM_DM_URL}
+                target="_blank"
+                rel="noopener noreferrer"
                 onClick={(e) => {
                   e.preventDefault();
-                  openInstagramApp();
+                  openInstagramDm();
                 }}
                 className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 py-4 text-base font-bold text-white shadow-lg active:scale-[0.98]"
               >
                 <ExternalLink className="h-5 w-5" />
                 Message @{INSTAGRAM_USERNAME}
               </a>
-              <a
-                href={INSTAGRAM_DM_WEB}
-                onClick={(e) => {
-                  e.preventDefault();
-                  openInstagramWeb();
-                }}
-                className="block w-full py-2.5 text-center text-xs text-slate-500 underline hover:text-slate-300"
-              >
-                App didn&apos;t open? Message @{INSTAGRAM_USERNAME} in browser
-              </a>
+              <p className="text-center text-[10px] text-slate-500">
+                Opens {INSTAGRAM_DM_URL.replace('https://', '')} in Instagram
+              </p>
             </div>
           </div>
         </div>
