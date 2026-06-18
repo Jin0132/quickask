@@ -8,12 +8,19 @@ import {
   Cigarette,
   Mic,
   Keyboard,
-  Check,
   Copy,
+  ClipboardCheck,
+  ExternalLink,
+  X,
 } from 'lucide-react';
 
 interface SpeechRecognitionEvent extends Event {
-  results: SpeechRecognitionResultList;
+  results: {
+    length: number;
+    [index: number]: {
+      [index: number]: { transcript: string };
+    };
+  };
 }
 
 interface SpeechRecognitionInstance extends EventTarget {
@@ -35,6 +42,8 @@ declare global {
 }
 
 const INSTAGRAM_USERNAME = 'icl_tokyo';
+const INSTAGRAM_DM_WEB = `https://ig.me/m/${INSTAGRAM_USERNAME}`;
+const INSTAGRAM_DM_APP = `instagram://direct?username=${INSTAGRAM_USERNAME}`;
 
 type CategoryId = 'food' | 'photo' | 'lost' | 'smoking';
 
@@ -77,7 +86,9 @@ export default function QuickAsk() {
   const [inputType, setInputType] = useState<'voice' | 'text'>('text');
   const [question, setQuestion] = useState('');
   const [isRecording, setIsRecording] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [copiedMessage, setCopiedMessage] = useState('');
+  const [copySucceeded, setCopySucceeded] = useState(false);
 
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
 
@@ -170,13 +181,32 @@ export default function QuickAsk() {
     if (!canSend) return;
 
     const message = buildMessage();
-    const instagramUrl = `https://ig.me/m/${INSTAGRAM_USERNAME}`;
-
     const copied = await copyToClipboard(message);
-    if (copied) setCopied(true);
 
-    // Use location.href — works in Instagram in-app browser; window.open in setTimeout is blocked
-    window.location.href = instagramUrl;
+    setCopiedMessage(message);
+    setCopySucceeded(copied);
+    setShowSuccessModal(true);
+  };
+
+  const openInstagramApp = () => {
+    // Opens DM compose screen for @icl_tokyo in the native Instagram app
+    window.location.href = INSTAGRAM_DM_APP;
+  };
+
+  const openInstagramWeb = () => {
+    // Universal link — opens DM to @icl_tokyo (app if installed, else browser)
+    window.location.href = INSTAGRAM_DM_WEB;
+  };
+
+  const handleCopyAgain = async () => {
+    const ok = await copyToClipboard(copiedMessage);
+    setCopySucceeded(ok);
+  };
+
+  const closeModal = () => {
+    setShowSuccessModal(false);
+    setCopiedMessage('');
+    setCopySucceeded(false);
   };
 
   return (
@@ -305,22 +335,20 @@ export default function QuickAsk() {
           <button
             onClick={handleSend}
             disabled={!canSend}
-            className={`flex w-full items-center justify-center gap-2.5 rounded-2xl py-4 text-base font-bold transition-all active:scale-[0.98] ${
+            className={`flex w-full flex-col items-center justify-center gap-1 rounded-2xl py-4 transition-all active:scale-[0.98] ${
               canSend
                 ? 'bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 text-white shadow-xl shadow-pink-500/25 hover:opacity-95'
                 : 'cursor-not-allowed bg-white/10 text-slate-500'
             }`}
           >
-            {copied ? (
-              <>
-                <Check className="w-5 h-5" />
-                Copied! Opening Instagram…
-              </>
-            ) : (
-              <>
-                <Copy className="w-5 h-5" />
-                Send via Instagram DM
-              </>
+            <span className="flex items-center gap-2.5 text-base font-bold">
+              <Copy className="w-5 h-5" />
+              Send via Instagram DM
+            </span>
+            {canSend && (
+              <span className="text-[11px] font-normal text-white/80">
+                Copies your message, then opens Instagram
+              </span>
             )}
           </button>
 
@@ -329,6 +357,114 @@ export default function QuickAsk() {
           </p>
         </footer>
       </div>
+
+      {/* Success modal — copy confirmation + Instagram steps */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 sm:items-center">
+          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-slate-900 p-6 shadow-2xl">
+            <div className="mb-5 flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div
+                  className={`rounded-full p-2.5 ${
+                    copySucceeded ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'
+                  }`}
+                >
+                  {copySucceeded ? (
+                    <ClipboardCheck className="h-6 w-6" />
+                  ) : (
+                    <Copy className="h-6 w-6" />
+                  )}
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-white">
+                    {copySucceeded ? 'Message copied!' : 'Copy your message'}
+                  </h2>
+                  <p className="text-sm text-slate-400">
+                    {copySucceeded
+                      ? 'Ready to paste in Instagram'
+                      : 'Auto-copy failed — select & copy below'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={closeModal}
+                className="rounded-full p-1.5 text-slate-400 hover:bg-white/10 hover:text-white"
+                aria-label="Close"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="mb-5 rounded-xl border border-white/10 bg-black/30 p-3">
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                Your message
+              </p>
+              <pre className="max-h-32 overflow-y-auto whitespace-pre-wrap text-sm text-slate-200">
+                {copiedMessage}
+              </pre>
+            </div>
+
+            {!copySucceeded && (
+              <button
+                onClick={handleCopyAgain}
+                className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl border border-white/20 py-3 text-sm font-medium text-white hover:bg-white/5"
+              >
+                <Copy className="h-4 w-4" />
+                Try copy again
+              </button>
+            )}
+
+            <div className="mb-5 space-y-2.5">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                Next steps
+              </p>
+              <ol className="space-y-2 text-sm text-slate-300">
+                <li className="flex gap-2.5">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-pink-500/20 text-xs font-bold text-pink-400">
+                    1
+                  </span>
+                  <span>
+                    Tap &ldquo;Message @{INSTAGRAM_USERNAME}&rdquo; below
+                  </span>
+                </li>
+                <li className="flex gap-2.5">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-pink-500/20 text-xs font-bold text-pink-400">
+                    2
+                  </span>
+                  <span>
+                    <strong className="text-white">Long-press</strong> the chat box →{' '}
+                    <strong className="text-white">Paste</strong> → Send
+                  </span>
+                </li>
+              </ol>
+            </div>
+
+            <div className="space-y-2.5">
+              <a
+                href={INSTAGRAM_DM_APP}
+                onClick={(e) => {
+                  e.preventDefault();
+                  openInstagramApp();
+                }}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 py-4 text-base font-bold text-white shadow-lg active:scale-[0.98]"
+              >
+                <ExternalLink className="h-5 w-5" />
+                Message @{INSTAGRAM_USERNAME}
+              </a>
+              <a
+                href={INSTAGRAM_DM_WEB}
+                onClick={(e) => {
+                  e.preventDefault();
+                  openInstagramWeb();
+                }}
+                className="block w-full py-2.5 text-center text-xs text-slate-500 underline hover:text-slate-300"
+              >
+                App didn&apos;t open? Message @{INSTAGRAM_USERNAME} in browser
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
