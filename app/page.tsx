@@ -42,8 +42,7 @@ declare global {
 }
 
 const INSTAGRAM_USERNAME = 'icl_tokyo';
-const INSTAGRAM_USER_ID = '23437671708';
-/** Meta official DM link (desktop / fallback) */
+const INSTAGRAM_PROFILE_WEB = `https://www.instagram.com/${INSTAGRAM_USERNAME}/`;
 const INSTAGRAM_DM_URL = `https://ig.me/m/${INSTAGRAM_USERNAME}`;
 
 function isMobile(): boolean {
@@ -58,30 +57,27 @@ function isInstagramInAppBrowser(): boolean {
   return typeof navigator !== 'undefined' && /Instagram/i.test(navigator.userAgent);
 }
 
-/**
- * Opens DM in the native Instagram app (logged-in session).
- * https://ig.me from in-app browser or window.open often shows web login instead.
- */
-function getInstagramAppDmUrl(): string {
+/** Most reliable: opens @icl_tokyo profile in the Instagram app */
+function getInstagramProfileAppUrl(): string {
   if (isAndroid()) {
-    return `intent://ig.me/m/${INSTAGRAM_USERNAME}#Intent;package=com.instagram.android;scheme=https;end`;
+    return `intent://instagram.com/_u/${INSTAGRAM_USERNAME}/#Intent;package=com.instagram.android;scheme=https;end`;
   }
-  return `instagram://direct?igid=${INSTAGRAM_USER_ID}`;
+  return `instagram://user?username=${INSTAGRAM_USERNAME}`;
 }
 
-function openInstagramDm(): void {
+function openInstagramProfile(): void {
   if (isMobile() || isInstagramInAppBrowser()) {
-    window.location.href = getInstagramAppDmUrl();
+    window.location.href = getInstagramProfileAppUrl();
     return;
   }
 
-  const opened = window.open(INSTAGRAM_DM_URL, '_blank', 'noopener,noreferrer');
+  const opened = window.open(INSTAGRAM_PROFILE_WEB, '_blank', 'noopener,noreferrer');
   if (!opened) {
-    window.location.href = INSTAGRAM_DM_URL;
+    window.location.href = INSTAGRAM_PROFILE_WEB;
   }
 }
 
-function openInstagramDmWeb(): void {
+function openInstagramDm(): void {
   window.location.href = INSTAGRAM_DM_URL;
 }
 
@@ -129,13 +125,13 @@ export default function QuickAsk() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [copiedMessage, setCopiedMessage] = useState('');
   const [copySucceeded, setCopySucceeded] = useState(false);
-  const [instagramDmHref, setInstagramDmHref] = useState(INSTAGRAM_DM_URL);
+  const [instagramHref, setInstagramHref] = useState(INSTAGRAM_PROFILE_WEB);
 
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
 
   useEffect(() => {
     if (isMobile() || isInstagramInAppBrowser()) {
-      setInstagramDmHref(getInstagramAppDmUrl());
+      setInstagramHref(getInstagramProfileAppUrl());
     }
   }, []);
 
@@ -461,12 +457,20 @@ export default function QuickAsk() {
                     1
                   </span>
                   <span>
-                    Tap &ldquo;Message @{INSTAGRAM_USERNAME}&rdquo; — opens the Instagram app
+                    Tap &ldquo;Open @{INSTAGRAM_USERNAME}&rdquo; below
                   </span>
                 </li>
                 <li className="flex gap-2.5">
                   <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-pink-500/20 text-xs font-bold text-pink-400">
                     2
+                  </span>
+                  <span>
+                    Tap <strong className="text-white">Message</strong> on the profile
+                  </span>
+                </li>
+                <li className="flex gap-2.5">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-pink-500/20 text-xs font-bold text-pink-400">
+                    3
                   </span>
                   <span>
                     <strong className="text-white">Long-press</strong> the chat box →{' '}
@@ -483,22 +487,22 @@ export default function QuickAsk() {
 
             <div className="space-y-2.5">
               <a
-                href={instagramDmHref}
+                href={instagramHref}
                 onClick={(e) => {
                   e.preventDefault();
-                  openInstagramDm();
+                  openInstagramProfile();
                 }}
                 className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 py-4 text-base font-bold text-white shadow-lg active:scale-[0.98]"
               >
                 <ExternalLink className="h-5 w-5" />
-                Message @{INSTAGRAM_USERNAME}
+                Open @{INSTAGRAM_USERNAME}
               </a>
               <button
                 type="button"
-                onClick={openInstagramDmWeb}
+                onClick={openInstagramDm}
                 className="w-full py-2 text-center text-xs text-slate-500 underline hover:text-slate-300"
               >
-                Login screen? Try {INSTAGRAM_DM_URL.replace('https://', '')}
+                Try DM link directly ({INSTAGRAM_DM_URL.replace('https://', '')})
               </button>
             </div>
           </div>
