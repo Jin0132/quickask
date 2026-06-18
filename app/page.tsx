@@ -138,19 +138,45 @@ export default function QuickAsk() {
 
   const canSend = question.trim().length > 0 && selectedCategory !== null;
 
+  const copyToClipboard = async (text: string): Promise<boolean> => {
+    try {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(textarea);
+      if (ok) return true;
+    } catch {
+      // Fall through
+    }
+
+    if (navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
+    return false;
+  };
+
   const handleSend = async () => {
     if (!canSend) return;
 
-    try {
-      await navigator.clipboard.writeText(buildMessage());
-      setCopied(true);
-      setTimeout(() => {
-        window.open(`https://ig.me/m/${INSTAGRAM_USERNAME}`, '_blank');
-        setCopied(false);
-      }, 1200);
-    } catch (err) {
-      console.error('Failed to copy:', err);
-    }
+    const message = buildMessage();
+    const instagramUrl = `https://ig.me/m/${INSTAGRAM_USERNAME}`;
+
+    const copied = await copyToClipboard(message);
+    if (copied) setCopied(true);
+
+    // Use location.href — works in Instagram in-app browser; window.open in setTimeout is blocked
+    window.location.href = instagramUrl;
   };
 
   return (
