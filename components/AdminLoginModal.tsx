@@ -1,7 +1,7 @@
 'use client';
 
 import { Lock, X } from 'lucide-react';
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { ADMIN_UI_SESSION_KEY } from '@/lib/types';
 
 type Props = {
@@ -17,7 +17,7 @@ export function AdminLoginModal({ open, onClose, onSuccess }: Props) {
 
   if (!open) return null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');

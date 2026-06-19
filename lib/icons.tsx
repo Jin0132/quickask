@@ -1,3 +1,5 @@
+'use client';
+
 import type { ReactNode } from 'react';
 import {
   Camera, Cigarette, Coffee, Compass, Heart, HelpCircle,
