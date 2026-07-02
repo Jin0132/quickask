@@ -15,7 +15,8 @@ export function AdminDashboard({ onExit, initialCategories }: Props) {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [backend, setBackend] = useState('memory');
+  const [saveError, setSaveError] = useState('');
+  const [backend, setBackend] = useState('local');
 
   const loadAnalytics = useCallback(async () => {
     const res = await fetch('/api/track');
@@ -32,7 +33,7 @@ export function AdminDashboard({ onExit, initialCategories }: Props) {
   }, [loadAnalytics]);
 
   useEffect(() => {
-    fetch('/api/categories').then((r) => r.json()).then((d) => setBackend(d.backend ?? 'memory')).catch(() => undefined);
+    fetch('/api/categories').then((r) => r.json()).then((d) => setBackend(d.backend ?? 'local')).catch(() => undefined);
   }, []);
 
   const updateCategory = (id: string, patch: Partial<CategoryConfig>) => {
@@ -144,9 +145,26 @@ export function AdminDashboard({ onExit, initialCategories }: Props) {
               );
             })}
           </div>
-          <button type="button" disabled={saving} onClick={async () => { setSaving(true); const ok = await saveCategoriesRemote(categories); setSaving(false); if (ok) { setSaved(true); setTimeout(() => setSaved(false), 2000); } }} className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-500 via-pink-500 to-emerald-500 py-4 text-base font-bold disabled:opacity-50">
-            <Save className="h-5 w-5" /> {saving ? 'Saving…' : saved ? 'Saved!' : 'Save & Publish'}
+          <button type="button" disabled={saving} onClick={async () => {
+            setSaving(true);
+            setSaveError('');
+            const result = await saveCategoriesRemote(categories);
+            setSaving(false);
+            if (result.ok) {
+              setSaved(true);
+              setTimeout(() => setSaved(false), 2000);
+            } else {
+              setSaveError(result.error ?? 'Save failed');
+            }
+          }} className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-500 via-pink-500 to-emerald-500 py-4 text-base font-bold disabled:opacity-50">
+            <Save className="h-5 w-5" /> {saving ? 'Saving…' : saved ? 'Saved to KV!' : 'Save & Publish'}
           </button>
+          {saveError && <p className="mt-2 text-center text-sm text-rose-400">{saveError}</p>}
+          {backend === 'local' && (
+            <p className="mt-2 text-center text-xs text-amber-400">
+              KV not connected — data will reset on server restart. Add KV_REST_API_URL to Vercel.
+            </p>
+          )}
         </section>
       </div>
     </div>

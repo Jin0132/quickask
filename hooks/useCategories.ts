@@ -43,9 +43,11 @@ export function useCategories() {
   return { categories, visibleCategories: categories.filter((c) => c.visible), loading, refetch: fetchCategories };
 }
 
-export async function saveCategoriesRemote(categories: CategoryConfig[]): Promise<boolean> {
+export async function saveCategoriesRemote(
+  categories: CategoryConfig[]
+): Promise<{ ok: boolean; error?: string }> {
   const res = await fetch('/api/categories', {
-    method: 'PUT',
+    method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ categories }),
   });
@@ -54,7 +56,8 @@ export async function saveCategoriesRemote(categories: CategoryConfig[]): Promis
       localStorage.setItem(LOCAL_KEY, JSON.stringify(categories));
       window.dispatchEvent(new Event('quickask:categories-updated'));
     }
-    return true;
+    return { ok: true };
   }
-  return false;
+  const data = (await res.json().catch(() => ({}))) as { error?: string };
+  return { ok: false, error: data.error ?? 'Save failed' };
 }
