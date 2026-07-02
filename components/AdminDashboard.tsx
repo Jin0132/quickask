@@ -162,7 +162,7 @@ export function AdminDashboard({ onExit, initialCategories }: Props) {
           {saveError && <p className="mt-2 text-center text-sm text-rose-400">{saveError}</p>}
           {backend === 'local' && (
             <p className="mt-2 text-center text-xs text-amber-400">
-              KV not connected — data will reset on server restart. Add KV_REST_API_URL to Vercel.
+              KV not connected — data will reset on server restart. Connect Upstash KV on Vercel.
             </p>
           )}
         </section>
